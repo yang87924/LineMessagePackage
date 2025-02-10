@@ -1,0 +1,12 @@
+D:\coding\reformtek\project\package\LineMessage\LineMessage\bin\Debug\net9.0\LineMessage.deps.json
+D:\coding\reformtek\project\package\LineMessage\LineMessage\bin\Debug\net9.0\LineMessage.dll
+D:\coding\reformtek\project\package\LineMessage\LineMessage\bin\Debug\net9.0\LineMessage.pdb
+D:\coding\reformtek\project\package\LineMessage\LineMessage\obj\Debug\net9.0\LineMessage.csproj.AssemblyReference.cache
+D:\coding\reformtek\project\package\LineMessage\LineMessage\obj\Debug\net9.0\LineMessage.GeneratedMSBuildEditorConfig.editorconfig
+D:\coding\reformtek\project\package\LineMessage\LineMessage\obj\Debug\net9.0\LineMessage.AssemblyInfoInputs.cache
+D:\coding\reformtek\project\package\LineMessage\LineMessage\obj\Debug\net9.0\LineMessage.AssemblyInfo.cs
+D:\coding\reformtek\project\package\LineMessage\LineMessage\obj\Debug\net9.0\LineMessage.csproj.CoreCompileInputs.cache
+D:\coding\reformtek\project\package\LineMessage\LineMessage\obj\Debug\net9.0\LineMessage.dll
+D:\coding\reformtek\project\package\LineMessage\LineMessage\obj\Debug\net9.0\refint\LineMessage.dll
+D:\coding\reformtek\project\package\LineMessage\LineMessage\obj\Debug\net9.0\LineMessage.pdb
+D:\coding\reformtek\project\package\LineMessage\LineMessage\obj\Debug\net9.0\ref\LineMessage.dll
