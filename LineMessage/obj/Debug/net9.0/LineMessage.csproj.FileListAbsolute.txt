@@ -10,3 +10,4 @@ D:\coding\reformtek\project\package\LineMessage\LineMessage\obj\Debug\net9.0\Lin
 D:\coding\reformtek\project\package\LineMessage\LineMessage\obj\Debug\net9.0\refint\LineMessage.dll
 D:\coding\reformtek\project\package\LineMessage\LineMessage\obj\Debug\net9.0\LineMessage.pdb
 D:\coding\reformtek\project\package\LineMessage\LineMessage\obj\Debug\net9.0\ref\LineMessage.dll
+D:\coding\reformtek\project\package\LineMessage\LineMessage\obj\Debug\net9.0\LineMessage.sourcelink.json
