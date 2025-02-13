@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -25,6 +26,9 @@ namespace LineMessage.Model
 
     public class LineSettings
     {
+        [Key]
+        public int Id { get; set; } // 新增這行
+
         public string ChannelAccessToken { get; set; }
         public string ChannelSecret { get; set; }
     }
