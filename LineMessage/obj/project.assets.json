@@ -2466,11 +2466,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "D:\\coding\\reformtek\\project\\package\\LineMessage\\LineMessage\\LineMessage.csproj",
+      "projectUniqueName": "C:\\Users\\yang\\Desktop\\lineBot\\LineMessagePackage\\LineMessage\\LineMessage.csproj",
       "projectName": "LineMessage",
-      "projectPath": "D:\\coding\\reformtek\\project\\package\\LineMessage\\LineMessage\\LineMessage.csproj",
+      "projectPath": "C:\\Users\\yang\\Desktop\\lineBot\\LineMessagePackage\\LineMessage\\LineMessage.csproj",
       "packagesPath": "C:\\Users\\yang\\.nuget\\packages\\",
-      "outputPath": "D:\\coding\\reformtek\\project\\package\\LineMessage\\LineMessage\\obj\\",
+      "outputPath": "C:\\Users\\yang\\Desktop\\lineBot\\LineMessagePackage\\LineMessage\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
         "D:\\IDE\\visualstudio\\sdk\\NuGetPackages"

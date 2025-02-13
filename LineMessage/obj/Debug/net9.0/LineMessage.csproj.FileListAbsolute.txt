@@ -11,3 +11,16 @@ D:\coding\reformtek\project\package\LineMessage\LineMessage\obj\Debug\net9.0\ref
 D:\coding\reformtek\project\package\LineMessage\LineMessage\obj\Debug\net9.0\LineMessage.pdb
 D:\coding\reformtek\project\package\LineMessage\LineMessage\obj\Debug\net9.0\ref\LineMessage.dll
 D:\coding\reformtek\project\package\LineMessage\LineMessage\obj\Debug\net9.0\LineMessage.sourcelink.json
+C:\Users\yang\Desktop\lineBot\LineMessagePackage\LineMessage\bin\Debug\net9.0\LineMessage.deps.json
+C:\Users\yang\Desktop\lineBot\LineMessagePackage\LineMessage\bin\Debug\net9.0\LineMessage.dll
+C:\Users\yang\Desktop\lineBot\LineMessagePackage\LineMessage\bin\Debug\net9.0\LineMessage.pdb
+C:\Users\yang\Desktop\lineBot\LineMessagePackage\LineMessage\obj\Debug\net9.0\LineMessage.csproj.AssemblyReference.cache
+C:\Users\yang\Desktop\lineBot\LineMessagePackage\LineMessage\obj\Debug\net9.0\LineMessage.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\yang\Desktop\lineBot\LineMessagePackage\LineMessage\obj\Debug\net9.0\LineMessage.AssemblyInfoInputs.cache
+C:\Users\yang\Desktop\lineBot\LineMessagePackage\LineMessage\obj\Debug\net9.0\LineMessage.AssemblyInfo.cs
+C:\Users\yang\Desktop\lineBot\LineMessagePackage\LineMessage\obj\Debug\net9.0\LineMessage.csproj.CoreCompileInputs.cache
+C:\Users\yang\Desktop\lineBot\LineMessagePackage\LineMessage\obj\Debug\net9.0\LineMessage.sourcelink.json
+C:\Users\yang\Desktop\lineBot\LineMessagePackage\LineMessage\obj\Debug\net9.0\LineMessage.dll
+C:\Users\yang\Desktop\lineBot\LineMessagePackage\LineMessage\obj\Debug\net9.0\refint\LineMessage.dll
+C:\Users\yang\Desktop\lineBot\LineMessagePackage\LineMessage\obj\Debug\net9.0\LineMessage.pdb
+C:\Users\yang\Desktop\lineBot\LineMessagePackage\LineMessage\obj\Debug\net9.0\ref\LineMessage.dll

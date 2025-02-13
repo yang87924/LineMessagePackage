@@ -21,8 +21,10 @@ namespace LineMessage.Domain;
         private readonly LineBotDbContext _dbContext;
         private readonly HttpClient _httpClient;
         private readonly JsonProvider _jsonProvider;
+        private static HttpClient client = new HttpClient(); // 負責處理HttpRequest
 
-        public LineBotService(string accessToken, string secret)
+
+    public LineBotService(string accessToken, string secret)
         {
             channelAccessToken = accessToken;
             channelSecret = secret;
@@ -33,8 +35,157 @@ namespace LineMessage.Domain;
             // Ensure database is created
             _dbContext.Database.EnsureCreated();
         }
+        /// <summary>
+        /// 接收到廣播請求時，在將請求傳至 Line 前多一層處理，依據收到的 messageType 將 messages 轉換成正確的型別，這樣 Json 轉換時才能正確轉換。
+        /// </summary>
+        /// <param name="messageType"></param>
+        /// <param name="requestBody"></param>
+        public void BroadcastMessageHandler(string messageType, object requestBody)
+        {
+            string strBody = requestBody.ToString();
+            switch (messageType)
+            {
+                case MessageTypeEnum.Text:
+                    var messageRequest = _jsonProvider.Deserialize<BroadcastMessageRequestDto<TextMessageDto>>(strBody);
+                    BroadcastMessage(messageRequest);
+                    break;
+            }
 
-        public async Task SaveGroupAsync(string groupId, string groupName)
+        }
+
+        /// <summary>
+        /// 將廣播訊息請求送到 Line
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="request"></param>
+        public async void BroadcastMessage<T>(BroadcastMessageRequestDto<T> request)
+        {
+            client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", channelAccessToken); //帶入 channel access token
+            var json = _jsonProvider.Serialize(request);
+            var requestMessage = new HttpRequestMessage
+            {
+                Method = HttpMethod.Post,
+                RequestUri = new Uri(broadcastMessageUri),
+                Content = new StringContent(json, Encoding.UTF8, "application/json")
+            };
+
+            var response = await client.SendAsync(requestMessage);
+            Console.WriteLine(await response.Content.ReadAsStringAsync());
+        }
+    public async Task SendMessageToAllUsersAsync<T>(BroadcastMessageRequestDto<T> request)
+        {
+            var activeUsers = await GetActiveUserIdsAsync();
+            foreach (var userId in activeUsers)
+            {
+                await SendMessageToUserAsync(userId, request);
+            }
+        }
+
+        private async Task<List<string>> GetActiveUserIdsAsync()
+        {
+            var activeUsers = await _dbContext.UserChats
+                .Where(u => u.IsActive)
+                .Select(u => u.UserId)
+                .ToListAsync();
+            var users = await _dbContext.UserChats.ToListAsync();
+            foreach (var user in users)
+            {
+                Console.WriteLine($"UserId: {user.UserId}, IsActive: {user.IsActive}");
+            }
+            Console.WriteLine($"Active users count: {activeUsers.Count}");
+            return activeUsers;
+        }
+        
+        public async Task<bool> SendMessageToUserAsync<T>(string userId, BroadcastMessageRequestDto<T> request)
+        {
+            try
+            {
+                if (!await IsUserActiveAsync(userId))
+                {
+                    Console.WriteLine($"用戶 {userId} 不存在或非活躍狀態");
+                    return false;
+                }
+
+            if (string.IsNullOrEmpty(userId))
+                {
+                    Console.WriteLine("用戶ID為空");
+                    return false;
+                }
+                string pushMessageUri = "https://api.line.me/v2/bot/message/push";
+
+                var pushRequest = new
+                {
+                    to = userId,
+                    messages = request.Messages
+                };
+
+                _httpClient.DefaultRequestHeaders.Clear();
+                _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+                _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", channelAccessToken);
+
+                var json = _jsonProvider.Serialize(pushRequest);
+                Console.WriteLine($"Sending message to user {userId}");
+                Console.WriteLine($"Request body: {json}");
+
+                var requestMessage = new HttpRequestMessage
+                {
+                    Method = HttpMethod.Post,
+                    RequestUri = new Uri(pushMessageUri),
+                    Content = new StringContent(json, Encoding.UTF8, "application/json")
+                };
+
+                var response = await _httpClient.SendAsync(requestMessage);
+                var responseContent = await response.Content.ReadAsStringAsync();
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    Console.WriteLine($"發送訊息給用戶 {userId} 失敗");
+                    Console.WriteLine($"狀態碼: {response.StatusCode}");
+                    Console.WriteLine($"回應內容: {responseContent}");
+                    return false;
+                }
+
+                Console.WriteLine($"成功發送訊息給用戶 {userId}");
+                return true;
+        }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"發送訊息給用戶 {userId} 時發生錯誤: {ex.Message}");
+                Console.WriteLine($"錯誤詳情: {ex}");
+                return false;
+        }
+        }
+    public async Task SaveUserAsync(string userId)
+    {
+        try
+        {
+            var existingUser = await _dbContext.UserChats.FindAsync(userId);
+            if (existingUser == null)
+            {
+                await _dbContext.UserChats.AddAsync(new UserChat
+                {
+                    UserId = userId,
+                    JoinedAt = DateTime.UtcNow,
+                    IsActive = true
+                });
+                Console.WriteLine($"新用戶已儲存: {userId}");
+            }
+            else
+            {
+                existingUser.IsActive = true;
+                _dbContext.UserChats.Update(existingUser);
+                Console.WriteLine($"更新既有用戶: {userId}");
+            }
+            await _dbContext.SaveChangesAsync();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"儲存用戶時發生錯誤: {ex.Message}");
+            throw;
+        }
+    }
+    public async Task SaveGroupAsync(string groupId, string groupName)
         {
             var existingGroup = await _dbContext.GroupChats.FindAsync(groupId);
             if (existingGroup == null)
@@ -108,7 +259,11 @@ namespace LineMessage.Domain;
         {
             foreach (var eventObject in requestBody.Events)
             {
-                switch (eventObject.Type)
+                if (eventObject.Source.Type == "user")
+                {
+                    await SaveUserAsync(eventObject.Source.UserId);
+                }
+            switch (eventObject.Type)
                 {
                     case WebhookEventTypeEnum.Join:
                         Console.WriteLine($"Bot joined group: {eventObject.Source.GroupId}");
@@ -132,7 +287,12 @@ namespace LineMessage.Domain;
                             {
                                 await SaveGroupAsync(eventObject.Source.GroupId, "Group " + eventObject.Source.GroupId);
                             }
-                            var replyMessage = new ReplyMessageRequestDto<TextMessageDto>()
+                            if (eventObject.Source.Type == "user")
+                            {
+                                Console.WriteLine($"收到用戶訊息，儲存用戶資料: {eventObject.Source.UserId}");
+                                await SaveUserAsync(eventObject.Source.UserId);
+                            }
+                    var replyMessage = new ReplyMessageRequestDto<TextMessageDto>()
                             {
                                 ReplyToken = eventObject.ReplyToken,
                                 Messages = new List<TextMessageDto>
@@ -142,10 +302,22 @@ namespace LineMessage.Domain;
                             };
                             await ReplyMessageAsync("text", replyMessage);
                             break;
-                }
+                    case WebhookEventTypeEnum.Unfollow:  // 用戶封鎖機器人
+                        var user = await _dbContext.UserChats.FindAsync(eventObject.Source.UserId);
+                        if (user != null)
+                        {
+                            user.IsActive = false;
+                            await _dbContext.SaveChangesAsync();
+                        }
+                        break;
+            }
             }
         }
-
+    public async Task<bool> IsUserActiveAsync(string userId)
+    {
+        var user = await _dbContext.UserChats.FindAsync(userId);
+        return user != null && user.IsActive;
+    }
     public async Task<bool> SendGroupMessageAsync<T>(string groupId, BroadcastMessageRequestDto<T> request)
     {
         try

@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "CUYkbh52LcA=",
+  "dgSpecHash": "/GhUTJ+Fhy4=",
   "success": true,
-  "projectFilePath": "D:\\coding\\reformtek\\project\\package\\LineMessage\\LineMessage\\LineMessage.csproj",
+  "projectFilePath": "C:\\Users\\yang\\Desktop\\lineBot\\LineMessagePackage\\LineMessage\\LineMessage.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\yang\\.nuget\\packages\\linebotsdk\\2.14.40\\linebotsdk.2.14.40.nupkg.sha512",
     "C:\\Users\\yang\\.nuget\\packages\\microsoft.aspnetcore.authentication.abstractions\\2.2.0\\microsoft.aspnetcore.authentication.abstractions.2.2.0.nupkg.sha512",
