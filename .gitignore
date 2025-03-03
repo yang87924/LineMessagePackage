@@ -1,1 +1,35 @@
-.vs/
+# mac
+.DS_Store
+._.vs
+._.github
+._.vscode
+._.gitignore
+
+# windows
+.vs
+.github
+.vscode
+.config
+.dockerignore
+*.nupkg
+*.user
+*.yml
+*.log
+*.bkp
+*.dll
+*.exe
+*.db
+
+f
+bin
+obj
+Logs
+runtimes
+PublishProfiles
+LiteDB
+Bottom
+Debug
+Release
+Rejected
+BuildFile
+Dockerfile
