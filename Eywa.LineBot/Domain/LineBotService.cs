@@ -1,6 +1,7 @@
 ﻿using System.Net.Http.Headers;
 using System.Text;
 using Eywa.LineBot.Data;
+using Eywa.LineBot.Dtos.Messages;
 using Eywa.LineBot.Dtos.Messages.Request;
 using Eywa.LineBot.Dtos.webhook;
 using Eywa.LineBot.Enum;
@@ -15,10 +16,10 @@ public interface ILineBotService
 {
     Task StoreLineSettingsAsync(string channelAccessToken, string channelSecret);
     Task ReceiveWebhook(WebhookRequestBodyDto requestBody);
-    Task SendMessageToAllGroupsHandlerAsync(string messageType, object requestBody);
-    Task SendGroupMessageHandlerAsync(string groupId, string messageType, object requestBody);
-    Task BroadcastMessageHandlerAsync(string messageType, object requestBody);
-    
+    Task SendGroupMessageHandlerAsync<T>(string groupId, BroadcastMessageRequestDto<T> requestBody) where T : BaseMessageDto;
+    Task SendMessageToAllGroupsHandlerAsync<T>(BroadcastMessageRequestDto<T> requestBody) where T : BaseMessageDto;
+    Task BroadcastMessageHandlerAsync<T>(BroadcastMessageRequestDto<T> requestBody) where T : BaseMessageDto;
+
     // Task<List<string>> GetActiveGroupIdsAsync();
     // Task<HttpResponseMessage> GetGroupSummaryAsync(string groupId);
     // Task<bool> IsUserActiveAsync(string userId);
@@ -31,153 +32,45 @@ public class LineBotService : ILineBotService
     private readonly LineBotDbContext _dbContext;
     private readonly HttpClient _httpClient;
     private  IJsonProvider _jsonProvider;
+    private string ChannelAccessToken { get; set; }
+    private string ChannelSecret { get; set; }
+
 
     public LineBotService(LineBotDbContext dbContext, HttpClient httpClient, IJsonProvider jsonProvider)
     {
-        _dbContext = dbContext;
         _httpClient = httpClient;
         _jsonProvider = jsonProvider;
-        _dbContext.Database.EnsureCreated();
     }
 
     public async Task StoreLineSettingsAsync(string channelAccessToken, string channelSecret)
     {
-        var settings = await _dbContext.LineSettings.FirstOrDefaultAsync();
-        if (settings == null)
-        {
-            settings = new LineSettings
-            {
-                ChannelAccessToken = channelAccessToken,
-                ChannelSecret = channelSecret
-            };
-            _dbContext.LineSettings.Add(settings);
-        }
-        else
-        {
-            bool isUpdated = false;
-
-            if (settings.ChannelAccessToken != channelAccessToken)
-            {
-                settings.ChannelAccessToken = channelAccessToken;
-                isUpdated = true;
-            }
-
-            if (settings.ChannelSecret != channelSecret)
-            {
-                settings.ChannelSecret = channelSecret;
-                isUpdated = true;
-            }
-
-            if (isUpdated)
-            {
-                _dbContext.LineSettings.Update(settings);
-            }
-        }
-        await _dbContext.SaveChangesAsync();
+        ChannelAccessToken = channelAccessToken;
+        ChannelSecret = channelSecret;
     }
-
-    public async Task<LineSettings> GetLineSettingsAsync()
+    public async Task BroadcastMessageHandlerAsync<T>(BroadcastMessageRequestDto<T> requestBody) where T : BaseMessageDto
     {
-        return await _dbContext.LineSettings.FirstOrDefaultAsync();
+        await BroadcastMessageAsync(requestBody);
     }
 
-    public async Task BroadcastMessageHandlerAsync(string messageType, object requestBody)
+    public async Task SendMessageToAllGroupsHandlerAsync<T>(BroadcastMessageRequestDto<T> requestBody) where T : BaseMessageDto
     {
-        string strBody = requestBody.ToString();
-        switch (messageType)
-        {
-            case MessageTypeEnum.Text:
-                var messageRequest = _jsonProvider.Deserialize<BroadcastMessageRequestDto<TextMessageDto>>(strBody);
-                await BroadcastMessageAsync(messageRequest);
-                break;
-            case MessageTypeEnum.Sticker:
-                var stickerRequest = _jsonProvider.Deserialize<BroadcastMessageRequestDto<StickerMessageDto>>(strBody);
-                await BroadcastMessageAsync(stickerRequest);
-                break;
-            case MessageTypeEnum.Image:
-                var imageRequest = _jsonProvider.Deserialize<BroadcastMessageRequestDto<ImageMessageDto>>(strBody);
-                await BroadcastMessageAsync(imageRequest);
-                break;
-            default:
-                throw new InvalidOperationException($"Unsupported message type: {messageType}");
-        }
+        await SendMessageToAllGroupsAsync(requestBody);
     }
-
-    public async Task SendMessageToAllGroupsHandlerAsync(string messageType, object requestBody)
+    public async Task SendGroupMessageHandlerAsync<T>(string groupId, BroadcastMessageRequestDto<T> requestBody) where T : BaseMessageDto
     {
-        string strBody = requestBody.ToString();
-        switch (messageType)
-        {
-            case MessageTypeEnum.Text:
-                var messageRequest = _jsonProvider.Deserialize<BroadcastMessageRequestDto<TextMessageDto>>(strBody);
-                await SendMessageToAllGroupsAsync(messageRequest);
-                break;
-            case MessageTypeEnum.Sticker:
-                var stickerRequest = _jsonProvider.Deserialize<BroadcastMessageRequestDto<StickerMessageDto>>(strBody);
-                await SendMessageToAllGroupsAsync(stickerRequest);
-                break;
-            case MessageTypeEnum.Image:
-                var imageRequest = _jsonProvider.Deserialize<BroadcastMessageRequestDto<ImageMessageDto>>(strBody);
-                await SendMessageToAllGroupsAsync(imageRequest);
-                break;
-            default:
-                throw new InvalidOperationException($"Unsupported message type: {messageType}");
-        }
+        await SendGroupMessageAsync(groupId, requestBody);
     }
-
-    public async Task SendGroupMessageHandlerAsync(string groupId, string messageType, object requestBody)
-    {
-        string strBody = requestBody.ToString();
-        switch (messageType)
-        {
-            case MessageTypeEnum.Text:
-                var messageRequest = _jsonProvider.Deserialize<BroadcastMessageRequestDto<TextMessageDto>>(strBody);
-                await SendGroupMessageAsync(groupId, messageRequest);
-                break;
-            case MessageTypeEnum.Sticker:
-                var stickerRequest = _jsonProvider.Deserialize<BroadcastMessageRequestDto<StickerMessageDto>>(strBody);
-                await SendGroupMessageAsync(groupId, stickerRequest);
-                break;
-            case MessageTypeEnum.Image:
-                var imageRequest = _jsonProvider.Deserialize<BroadcastMessageRequestDto<ImageMessageDto>>(strBody);
-                await SendGroupMessageAsync(groupId, imageRequest);
-                break;
-            default:
-                throw new InvalidOperationException($"Unsupported message type: {messageType}");
-        }
-    }
-
     private async Task BroadcastMessageAsync<T>(BroadcastMessageRequestDto<T> request)
     {
-        var settings = await GetLineSettingsAsync();
-        if (settings == null)
-        {
-            throw new InvalidOperationException("Line settings not configured.");
-        }
-
-        _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-        _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", settings.ChannelAccessToken);
         var json = _jsonProvider.Serialize(request);
-        var requestMessage = new HttpRequestMessage
-        {
-            Method = HttpMethod.Post,
-            RequestUri = new Uri("https://api.line.me/v2/bot/message/broadcast"),
-            Content = new StringContent(json, Encoding.UTF8, "application/json")
-        };
+        var url = "https://api.line.me/v2/bot/message/broadcast";
 
-        var response = await _httpClient.SendAsync(requestMessage);
+        var response = await PostJson(url, json);
         var responseContent = await response.Content.ReadAsStringAsync();
-        //Console.WriteLine(responseContent);
     }
 
     private async Task<bool> SendGroupMessageAsync<T>(string groupId, BroadcastMessageRequestDto<T> request)
     {
-        var settings = await GetLineSettingsAsync();
-        if (settings == null)
-        {
-            throw new InvalidOperationException("Line settings not configured.");
-        }
-
         try
         {
             string pushMessageUri = "https://api.line.me/v2/bot/message/push";
@@ -187,41 +80,19 @@ public class LineBotService : ILineBotService
                 to = groupId,
                 messages = request.Messages
             };
-
-            _httpClient.DefaultRequestHeaders.Clear();
-            _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", settings.ChannelAccessToken);
-
             var json = _jsonProvider.Serialize(pushRequest);
-            //Console.WriteLine($"Sending message to group {groupId}");
-            //Console.WriteLine($"Request body: {json}");
 
-            var requestMessage = new HttpRequestMessage
-            {
-                Method = HttpMethod.Post,
-                RequestUri = new Uri(pushMessageUri),
-                Content = new StringContent(json, Encoding.UTF8, "application/json")
-            };
-
-            var response = await _httpClient.SendAsync(requestMessage);
+            var response = await PostJson(pushMessageUri, json);
             var responseContent = await response.Content.ReadAsStringAsync();
 
-            if (!response.IsSuccessStatusCode)
-            {
-                //Console.WriteLine($"Failed to send message to group {groupId}. Status: {response.StatusCode}");
-                //Console.WriteLine($"Response: {responseContent}");
-                return false;
-            }
-
-            //Console.WriteLine($"Successfully sent message to group {groupId}");
-            return true;
+            return response.IsSuccessStatusCode;
         }
         catch (Exception ex)
         {
-            //Console.WriteLine($"Error sending message to group {groupId}: {ex.Message}");
             return false;
         }
     }
+
 
     private async Task SendMessageToAllGroupsAsync<T>(BroadcastMessageRequestDto<T> request)
     {
@@ -240,36 +111,35 @@ public class LineBotService : ILineBotService
             .ToListAsync();
     }
 
+    /// <summary>
+    /// 獲取群聊摘要
+    /// </summary>
+    /// <param name="groupId"></param>
+    /// <returns></returns>
     public async Task<HttpResponseMessage> GetGroupSummaryAsync(string groupId)
     {
-        var settings = await GetLineSettingsAsync();
-        if (settings == null)
-        {
-            throw new InvalidOperationException("Line settings not configured.");
-        }
-
         try
         {
             var requestUri = $"https://api.line.me/v2/bot/group/{groupId}/summary";
             var request = new HttpRequestMessage(HttpMethod.Get, requestUri);
-            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", settings.ChannelAccessToken);
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", ChannelAccessToken);
 
             var response = await _httpClient.SendAsync(request);
 
             if (!response.IsSuccessStatusCode)
             {
                 var errorContent = await response.Content.ReadAsStringAsync();
-                //Console.WriteLine($"Status Code: {response.StatusCode}");
-                //Console.WriteLine($"Error Response: {errorContent}");
-                //Console.WriteLine($"Request URL: {requestUri}");
-                //Console.WriteLine($"Token: {settings.ChannelAccessToken}");
+                Console.WriteLine($"Status Code: {response.StatusCode}");
+                Console.WriteLine($"Error Response: {errorContent}");
+                Console.WriteLine($"Request URL: {requestUri}");
+                Console.WriteLine($"Token: {ChannelAccessToken}");
             }
 
             return response;
         }
         catch (Exception ex)
         {
-            //Console.WriteLine($"Exception in GetGroupSummaryAsync: {ex.Message}");
+            Console.WriteLine($"Exception in GetGroupSummaryAsync: {ex.Message}");
             throw;
         }
     }
@@ -347,32 +217,27 @@ public class LineBotService : ILineBotService
         await _dbContext.SaveChangesAsync();
     }
 
-    public async Task<bool> IsUserActiveAsync(string userId)
-    {
-        var user = await _dbContext.UserChats.FindAsync(userId);
-        return user != null && user.IsActive;
-    }
-
     public async Task ReplyMessageAsync<T>(string messageType, ReplyMessageRequestDto<T> request)
     {
-        var settings = await GetLineSettingsAsync();
-        if (settings == null)
-        {
-            throw new InvalidOperationException("Line settings not configured.");
-        }
-
-        _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-        _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", settings.ChannelAccessToken);
-
         var json = _jsonProvider.Serialize(request);
+        var url = "https://api.line.me/v2/bot/message/reply";
+        PostJson(url, json);
+    }
+
+    private async Task<HttpResponseMessage> PostJson(string url, string json)
+    {
+        _httpClient.DefaultRequestHeaders.Clear();
+        _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+        _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", ChannelAccessToken);
+
         var requestMessage = new HttpRequestMessage
         {
             Method = HttpMethod.Post,
-            RequestUri = new Uri("https://api.line.me/v2/bot/message/reply"),
+            RequestUri = new Uri(url),
             Content = new StringContent(json, Encoding.UTF8, "application/json")
         };
 
         var response = await _httpClient.SendAsync(requestMessage);
-        //Console.WriteLine(await response.Content.ReadAsStringAsync());
+        return response;
     }
 }
