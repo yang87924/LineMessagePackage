@@ -31,15 +31,18 @@ public class LineBotService : ILineBotService
 {
     private readonly LineBotDbContext _dbContext;
     private readonly HttpClient _httpClient;
-    private  IJsonProvider _jsonProvider;
+    private readonly IJsonProvider _jsonProvider;
     private string ChannelAccessToken { get; set; }
     private string ChannelSecret { get; set; }
 
 
-    public LineBotService(LineBotDbContext dbContext, HttpClient httpClient, IJsonProvider jsonProvider)
+    public LineBotService(LineBotDbContext dbContext, IJsonProvider jsonProvider)
     {
-        _httpClient = httpClient;
+        _dbContext = dbContext;
+        _httpClient = new HttpClient();
         _jsonProvider = jsonProvider;
+        _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+        _dbContext.Database.EnsureCreated();
     }
 
     public async Task StoreLineSettingsAsync(string channelAccessToken, string channelSecret)
@@ -226,18 +229,25 @@ public class LineBotService : ILineBotService
 
     private async Task<HttpResponseMessage> PostJson(string url, string json)
     {
-        _httpClient.DefaultRequestHeaders.Clear();
-        _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-        _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", ChannelAccessToken);
-
-        var requestMessage = new HttpRequestMessage
+        try
         {
-            Method = HttpMethod.Post,
-            RequestUri = new Uri(url),
-            Content = new StringContent(json, Encoding.UTF8, "application/json")
-        };
-
-        var response = await _httpClient.SendAsync(requestMessage);
-        return response;
+            //_httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", ChannelAccessToken);
+            var requestMessage = new HttpRequestMessage
+            {
+                Method = HttpMethod.Post,
+                RequestUri = new Uri(url),
+                Content = new StringContent(json, Encoding.UTF8, "application/json")
+            };
+            var response = await _httpClient.SendAsync(requestMessage);
+            return response;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Exception in PostJson: {ex.Message}");
+            throw;
+        }
+        
+        
     }
 }

@@ -5,7 +5,7 @@
     <Authors>Reformtek</Authors>
     <PackageId>Eywa.LineBot</PackageId>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <Version>9.0.0</Version>
+    <Version>9.0.1</Version>
 
     <TargetFramework>net9.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
@@ -24,6 +24,11 @@
     <PackageReference Include="Swashbuckle.AspNetCore" Version="7.2.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Dtos\NewFolder\" />
+  </ItemGroup>
+
 </Project>
+
 
 
